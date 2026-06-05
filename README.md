@@ -5,14 +5,14 @@ Mingpu is an extremely minimal GPU architecture that I wrote for fun and also to
 Currently, the architecture includes:
 
 * A control unit to dispatch instructions to compute cores.
-* 16 compute cores that includes:
+* 16 compute cores each with:
     * 8-bit word size.
     * 256 bytes of local mem each core.
-    * A minimal 6 op ISA - NOP, ADD (signed), MUL (signed), LOAD, STORE, HALT.
+    * A minimal 6-op ISA - NOP, ADD (signed), MUL (signed), LOAD, STORE, HALT.
 
 ## Setup
 
-I currently uses [Icarus Verilog](https://github.com/steveicarus/iverilog) for development of this project, so have it installed and you are good to go.
+I currently use [Icarus Verilog](https://github.com/steveicarus/iverilog) for development of this project, so have it installed and you are good to go.
 
 ## Run testbench
 
