@@ -67,10 +67,10 @@ module gpu_tb;
     task automatic check_core(input int core, input int addr,
                                input int expected, input string test_name);
         @(posedge clk); #1;
-        rd_core = 4'(core);
-        rd_addr = 8'(addr);
+        rd_core = core;
+        rd_addr = addr;
         @(posedge clk); #1;
-        if (rd_data == 8'(expected)) begin
+        if (rd_data == expected) begin
             $display("PASS  [%s] core %2d mem[%0d] = %3d", test_name, core, addr, rd_data);
             pass_count++;
         end else begin
@@ -98,15 +98,15 @@ module gpu_tb;
         // mem[0] = i, acc = mem[0]*3, mem[1] = acc
         // expected: mem[1] = i*3
         // ----------------------------------------------------------------
-        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {8'd4, 8'd0}; init_imem_we = 1'b1; // LOAD 0
-        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {8'd2, 8'd3}; init_imem_we = 1'b1; // MUL  3
-        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {8'd3, 8'd1}; init_imem_we = 1'b1; // STORE 1
-        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {8'd5, 8'd0}; init_imem_we = 1'b1; // HALT
+        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {LOAD,  OPERAND_W'(0)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {MUL,   OPERAND_W'(3)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {STORE, OPERAND_W'(1)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {HALT,  OPERAND_W'(0)}; init_imem_we = 1'b1;
         @(posedge clk); #1; init_imem_we = 1'b0;
 
         for (int i = 0; i < NUM_CORES; i++) begin
             @(posedge clk); #1;
-            init_core = 4'(i); init_addr = 8'd0; init_data = 8'(i); init_we = 1'b1;
+            init_core = i; init_addr = 0; init_data = i; init_we = 1'b1;
         end
         @(posedge clk); #1; init_we = 1'b0;
 
@@ -116,20 +116,19 @@ module gpu_tb;
 
         // ----------------------------------------------------------------
         // Test 2: LOAD; LOAD; STORE; HALT  (deadlock regression)
-        // Two consecutive LOADs - would hang forever on old RTL.
         // mem[0]=i (from Test 1), mem[2]=i*2
         // Second LOAD overwrites acc, so mem[3] = mem[2] = i*2
         // expected: mem[3] = i*2
         // ----------------------------------------------------------------
-        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {8'd4, 8'd0}; init_imem_we = 1'b1; // LOAD 0
-        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {8'd4, 8'd2}; init_imem_we = 1'b1; // LOAD 2
-        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {8'd3, 8'd3}; init_imem_we = 1'b1; // STORE 3
-        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {8'd5, 8'd0}; init_imem_we = 1'b1; // HALT
+        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {LOAD,  OPERAND_W'(0)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {LOAD,  OPERAND_W'(2)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {STORE, OPERAND_W'(3)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {HALT,  OPERAND_W'(0)}; init_imem_we = 1'b1;
         @(posedge clk); #1; init_imem_we = 1'b0;
 
         for (int i = 0; i < NUM_CORES; i++) begin
             @(posedge clk); #1;
-            init_core = 4'(i); init_addr = 8'd2; init_data = 8'(i*2); init_we = 1'b1;
+            init_core = i; init_addr = 2; init_data = i*2; init_we = 1'b1;
         end
         @(posedge clk); #1; init_we = 1'b0;
 
@@ -139,18 +138,17 @@ module gpu_tb;
 
         // ----------------------------------------------------------------
         // Test 3: LOAD; STORE; HALT  (stale-write regression)
-        // STORE immediately after LOAD - old RTL would write stale acc=0.
         // mem[0] = i+1 so a stale write of 0 is distinguishable.
         // expected: mem[1] = i+1
         // ----------------------------------------------------------------
-        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {8'd4, 8'd0}; init_imem_we = 1'b1; // LOAD 0
-        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {8'd3, 8'd1}; init_imem_we = 1'b1; // STORE 1
-        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {8'd5, 8'd0}; init_imem_we = 1'b1; // HALT
+        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {LOAD,  OPERAND_W'(0)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {STORE, OPERAND_W'(1)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {HALT,  OPERAND_W'(0)}; init_imem_we = 1'b1;
         @(posedge clk); #1; init_imem_we = 1'b0;
 
         for (int i = 0; i < NUM_CORES; i++) begin
             @(posedge clk); #1;
-            init_core = 4'(i); init_addr = 8'd0; init_data = 8'(i+1); init_we = 1'b1;
+            init_core = i; init_addr = 0; init_data = i+1; init_we = 1'b1;
         end
         @(posedge clk); #1; init_we = 1'b0;
 
@@ -164,15 +162,15 @@ module gpu_tb;
         // Same program as Test 1, mem[0] = i+5.
         // expected: mem[1] = (i+5)*3
         // ----------------------------------------------------------------
-        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {8'd4, 8'd0}; init_imem_we = 1'b1; // LOAD 0
-        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {8'd2, 8'd3}; init_imem_we = 1'b1; // MUL  3
-        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {8'd3, 8'd1}; init_imem_we = 1'b1; // STORE 1
-        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {8'd5, 8'd0}; init_imem_we = 1'b1; // HALT
+        @(posedge clk); #1; init_imem_addr = 0; init_imem_data = {LOAD,  OPERAND_W'(0)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 1; init_imem_data = {MUL,   OPERAND_W'(3)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 2; init_imem_data = {STORE, OPERAND_W'(1)}; init_imem_we = 1'b1;
+        @(posedge clk); #1; init_imem_addr = 3; init_imem_data = {HALT,  OPERAND_W'(0)}; init_imem_we = 1'b1;
         @(posedge clk); #1; init_imem_we = 1'b0;
 
         for (int i = 0; i < NUM_CORES; i++) begin
             @(posedge clk); #1;
-            init_core = 4'(i); init_addr = 8'd0; init_data = 8'(i+5); init_we = 1'b1;
+            init_core = i; init_addr = 0; init_data = i+5; init_we = 1'b1;
         end
         @(posedge clk); #1; init_we = 1'b0;
 

@@ -7,12 +7,13 @@ Mingpu is an extremely minimal GPU architecture that I wrote for fun and also to
 Currently, Mingpu includes:
 
 * A control unit to dispatch instructions to compute cores.
-* 16 compute cores each with:
+* 80 compute cores each with:
     * 1 register/accumulator.
-    * 8-bit word size.
-    * 256 bytes of local mem each core.
+    * 16-bit word size in register and memory.
+    * 8-bit opcode and 8-bit operand.
+    * 512 bytes (256 16-bit words) of local mem each core.
     * A minimal 6-op ISA - NOP, ADD (signed), MUL (signed), LOAD, STORE, HALT.
-* 8-bit program counter, which means 256 bytes kernel maximum.
+* 1 8-bit program counter for all cores, which means 256 instructions (512 bytes) for kernel maximum.
 
 ## Setup
 
@@ -31,7 +32,10 @@ You can configure the gpu (number of cores, local mem size, data width, etc.) in
 ## Todos
 
 * Rethink better arch overall, currently this is a very naive arch and implementation from me. Though it should always stay minimal.
-* Integration with real hardware, possibly with a Tang Nano 4k (which should then come with UART stuff, an assembler, and a driver too).
+* Integration with real hardware, possibly an EBAZ4205, which should come with:
+    * Ethernet communication code.
+    * Driver.
+    * Assembler.
 
 ## Copyrights and License
 

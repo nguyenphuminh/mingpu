@@ -33,6 +33,9 @@ module compute_core #(
     assign operand = signed'(instr.operand);
     assign addr    = instr.operand;
 
+    (* use_dsp = "yes" *) logic signed [DATA_W-1:0] mul_result;
+    assign mul_result = acc * operand;
+
     // Executing flag - CU wants to execute and core is not halted yet
     logic executing;
     assign executing = instr_valid && !halted;
@@ -87,7 +90,7 @@ module compute_core #(
                 case (instr.opcode)
                     NOP: ;   // Do nothing
                     ADD: acc <= DATA_W'(acc + operand);
-                    MUL: acc <= DATA_W'(acc * operand);
+                    MUL: acc <= mul_result;
                     LOAD: ;  // Handled by op_done above
                     STORE: ; // Handled in memory block above
                     HALT: halted <= 1'b1;
