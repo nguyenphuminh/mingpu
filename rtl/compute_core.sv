@@ -57,12 +57,18 @@ module compute_core #(
     assign op_done   = load_done;  // | alu_done | mul_done | etc.
     assign op_result = mem_rdata;
 
-    // Memory block - no reset so tools can infer BSRAM cleanly
+    // Memory block
+    logic [ADDR_W-1:0] wr_addr;
+    logic [DATA_W-1:0] wr_data;
+    logic              wr_en;
+
+    assign wr_en   = init_we || (executing && instr.opcode == STORE && !op_done);
+    assign wr_addr = init_we ? init_addr : addr;
+    assign wr_data = init_we ? init_data : DATA_W'(acc);
+
     always_ff @(posedge clk) begin
-        if (init_we)
-            lmem[init_addr] <= init_data;
-        else if (executing && instr.opcode == STORE && !op_done)
-            lmem[addr]      <= DATA_W'(acc);
+        if (wr_en)
+            lmem[wr_addr] <= wr_data;
         mem_rdata <= lmem[mem_raddr];
     end
 
